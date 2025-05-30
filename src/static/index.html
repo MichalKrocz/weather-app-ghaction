@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Prosta aplikacja pogodowa</title>
+</head>
+<body>
+    <h2>Sprawdź pogodę</h2>
+
+    <form id="weatherForm">
+        <label for="country">Kraj:</label>
+        <select id="country" required></select>
+
+        <label for="city">Miasto:</label>
+        <select id="city" required></select>
+
+        <button type="submit">Pokaż pogodę</button>
+    </form>
+
+    <pre id="result"></pre>
+
+    <script>
+        const locations = [];
+        const countrySelect = document.getElementById("country");
+        const citySelect = document.getElementById("city");
+        const result = document.getElementById("result");
+
+        async function fetchLocations() {
+            const res = await fetch("/locations");
+            const data = await res.json();
+            locations.push(...data);
+
+            const countries = [...new Set(data.map(loc => loc.country))];
+            for (const country of countries) {
+                const opt = document.createElement("option");
+                opt.value = country;
+                opt.textContent = country;
+                countrySelect.appendChild(opt);
+            }
+
+            updateCities();
+        }
+
+        function updateCities() {
+            const selectedCountry = countrySelect.value;
+            citySelect.innerHTML = "";
+            const filtered = locations.filter(loc => loc.country === selectedCountry);
+            for (const loc of filtered) {
+                const opt = document.createElement("option");
+                opt.value = loc.city;
+                opt.textContent = loc.city;
+                citySelect.appendChild(opt);
+            }
+        }
+
+        document.getElementById("weatherForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const country = countrySelect.value;
+            const city = citySelect.value;
+
+            const res = await fetch(`/weather?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}`);
+            const text = await res.text();
+            result.textContent = text;
+        });
+
+        countrySelect.addEventListener("change", updateCities);
+
+        fetchLocations();
+    </script>
+</body>
+</html>
